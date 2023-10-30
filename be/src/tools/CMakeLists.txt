@@ -45,3 +45,13 @@ add_custom_command(TARGET meta_tool POST_BUILD
     COMMAND ${CMAKE_OBJCOPY} --add-gnu-debuglink=$<TARGET_FILE:meta_tool>.dbg $<TARGET_FILE:meta_tool>
     )
 endif()
+
+add_executable(csv_to_parquet_tool
+    csv_to_parquet_tool.cpp
+)
+pch_reuse(csv_to_parquet_tool)
+set_target_properties(csv_to_parquet_tool PROPERTIES ENABLE_EXPORTS 1)
+target_link_libraries(csv_to_parquet_tool
+    ${DORIS_LINK_LIBS}
+)
+install(TARGETS csv_to_parquet_tool DESTINATION ${OUTPUT_DIR}/lib/)

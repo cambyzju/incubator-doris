@@ -68,7 +68,13 @@ public:
         return *this;
     }
     TSlotDescriptorBuilder& decimal_type(int precision, int scale) {
-        _slot_desc.slotType = get_common_type(to_thrift(TYPE_DECIMALV2));
+        if (precision <= BeConsts::MAX_DECIMAL32_PRECISION) {
+            _slot_desc.slotType = get_common_type(to_thrift(TYPE_DECIMAL32));
+        } else if (precision <= BeConsts::MAX_DECIMAL64_PRECISION) {
+            _slot_desc.slotType = get_common_type(to_thrift(TYPE_DECIMAL64));
+        } else {
+            _slot_desc.slotType = get_common_type(to_thrift(TYPE_DECIMAL128I));
+        }
         _slot_desc.slotType.types[0].scalar_type.__set_precision(precision);
         _slot_desc.slotType.types[0].scalar_type.__set_scale(scale);
         return *this;

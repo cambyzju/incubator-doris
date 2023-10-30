@@ -340,6 +340,15 @@ Status VParquetWriterWrapper::parse_schema() {
     return Status::OK();
 }
 
+void set_bitmap(uint8_t* bitmap, int index, bool v) {
+    int bindex = index / 8;
+    if (v) {
+        bitmap[bindex] |= (1 << (index % 8));
+    } else {
+        bitmap[bindex] &= ~(1 << (index % 8));
+    }
+}
+
 #define RETURN_WRONG_TYPE \
     return Status::InvalidArgument("Invalid column type: {}", raw_column->get_name());
 
@@ -348,10 +357,13 @@ Status VParquetWriterWrapper::parse_schema() {
     parquet::WRITER* col_writer = static_cast<parquet::WRITER*>(rgWriter->column(i));             \
     if (null_map != nullptr) {                                                                    \
         auto& null_data = assert_cast<const ColumnUInt8&>(*null_map).get_data();                  \
+        uint8_t valid_bits[(sz - 1) / 8 + 1];                                                     \
+        memset(valid_bits, 0, sizeof(valid_bits));                                                \
         for (size_t row_id = 0; row_id < sz; row_id++) {                                          \
             def_level[row_id] = null_data[row_id] == 0;                                           \
+            set_bitmap(valid_bits, row_id, null_data[row_id] == 0);                               \
         }                                                                                         \
-        col_writer->WriteBatch(sz, def_level.data(), nullptr,                                     \
+        col_writer->WriteBatchSpaced(sz, def_level.data(), nullptr,  valid_bits, 0,               \
                                reinterpret_cast<const NATIVE_TYPE*>(                              \
                                        assert_cast<const COLUMN_TYPE&>(*col).get_data().data())); \
     } else if (const auto* not_nullable_column = check_and_get_column<const COLUMN_TYPE>(col)) {  \
