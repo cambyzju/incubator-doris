@@ -49,6 +49,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 elseif (CMAKE_SYSTEM_NAME MATCHES "Darwin")
     set (OS_MACOSX 1)
     add_definitions(-D OS_MACOSX)
+    add_definitions(-D BOOST_NO_CXX98_FUNCTION_BASE)
 endif ()
 
 if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
