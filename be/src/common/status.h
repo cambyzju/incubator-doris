@@ -281,8 +281,7 @@ namespace ErrorCode {
     E(INVERTED_INDEX_ANALYZER_ERROR, -6011, false);          \
     E(KEY_NOT_FOUND, -7000, false);                          \
     E(KEY_ALREADY_EXISTS, -7001, false);                     \
-    E(ENTRY_NOT_FOUND, -7002, false);                        \
-    E(CGROUP_ERROR, -7411, false);
+    E(ENTRY_NOT_FOUND, -7002, false);
 
 // Define constexpr int error_code_name = error_code_value
 #define M(NAME, ERRORCODE, ENABLESTACKTRACE) constexpr int NAME = ERRORCODE;
@@ -478,8 +477,6 @@ public:
     ERROR_CTOR_NOSTACK(NotAuthorized, NOT_AUTHORIZED)
     ERROR_CTOR(HttpError, HTTP_ERROR)
     ERROR_CTOR_NOSTACK(NeedSendAgain, NEED_SEND_AGAIN)
-    ERROR_CTOR(CgroupError, CGROUP_ERROR)
-#undef ERROR_CTOR
 
     template <int code>
     bool is() const {
