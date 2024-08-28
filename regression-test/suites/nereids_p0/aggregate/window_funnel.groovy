@@ -654,5 +654,4 @@ suite("window_funnel") {
         GROUP BY user_id
         order BY user_id
     """
-
 }
