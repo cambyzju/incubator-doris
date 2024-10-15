@@ -672,19 +672,31 @@ Status Compaction::do_compaction_impl(int64_t permits) {
                             break;
                         }
                     }
+
+                    // if we restore tablets from other cluster, then we got schema.index.index_id
+                    // from src cluster in be, but in fe, we will generate new index_id,
+                    // different index_id make we can not find index file correctly.
+                    // Here we temporarily skip index compaction.
+                    // (TODO) we should use index_id in rowset schema, not tablet schema.
+                    if (index_meta->index_id() != tablet_index->index_id()) {
+                        error_handler(index_meta->index_id(), column_uniq_id);
+                        status = Status::Error<INVERTED_INDEX_COMPACTION_ERROR>(
+                                "index ids are different, skip index compaction");
+                        is_continue = true;
+                        break;
+                    }
                 }
                 if (is_continue) {
                     continue;
                 }
 
                 std::vector<lucene::store::Directory*> dest_index_dirs(dest_segment_num);
-                std::vector<lucene::store::Directory*> src_index_dirs(src_segment_num);
                 try {
+                    std::vector<std::unique_ptr<DorisCompoundReader>> src_idx_dirs(src_segment_num);
                     for (int src_segment_id = 0; src_segment_id < src_segment_num;
                          src_segment_id++) {
-                        auto src_dir = DORIS_TRY(
+                        src_idx_dirs[src_segment_id] = DORIS_TRY(
                                 inverted_index_file_readers[src_segment_id]->open(index_meta));
-                        src_index_dirs[src_segment_id] = src_dir.release();
                     }
                     for (int dest_segment_id = 0; dest_segment_id < dest_segment_num;
                          dest_segment_id++) {
@@ -693,7 +705,7 @@ Status Compaction::do_compaction_impl(int64_t permits) {
                         dest_index_dirs[dest_segment_id] = dest_dir;
                     }
                     auto st =
-                            compact_column(index_meta->index_id(), src_index_dirs, dest_index_dirs,
+                            compact_column(index_meta->index_id(), src_idx_dirs, dest_index_dirs,
                                            fs, index_tmp_path, trans_vec, dest_segment_num_rows);
                     if (!st.ok()) {
                         error_handler(index_meta->index_id(), column_uniq_id);
