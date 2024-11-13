@@ -440,13 +440,18 @@ public class DynamicPartitionScheduler extends MasterDaemon {
         ZonedDateTime now = ZonedDateTime.now(dynamicPartitionProperty.getTimeZone().toZoneId());
         String lowerBorder = DynamicPartitionUtil.getPartitionRangeString(dynamicPartitionProperty,
                 now, realStart, partitionFormat);
+        String upperBorder = DynamicPartitionUtil.getPartitionRangeString(dynamicPartitionProperty,
+                now, 0, partitionFormat);
         PartitionValue lowerPartitionValue = new PartitionValue(lowerBorder);
+        PartitionValue upperPartitionValue = new PartitionValue(upperBorder);
         List<Range<PartitionKey>> reservedHistoryPartitionKeyRangeList = new ArrayList<Range<PartitionKey>>();
         Range<PartitionKey> reservePartitionKeyRange;
         try {
             PartitionKey lowerBound = PartitionKey.createPartitionKey(Collections.singletonList(lowerPartitionValue),
                     Collections.singletonList(partitionColumn));
-            reservePartitionKeyRange = Range.atLeast(lowerBound);
+            PartitionKey upperBound = PartitionKey.createPartitionKey(Collections.singletonList(upperPartitionValue),
+                    Collections.singletonList(partitionColumn));
+            reservePartitionKeyRange = Range.closedOpen(lowerBound, upperBound);
             reservedHistoryPartitionKeyRangeList.add(reservePartitionKeyRange);
         } catch (Exception e) {
             // AnalysisException: keys.size is always equal to column.size, cannot reach this exception
