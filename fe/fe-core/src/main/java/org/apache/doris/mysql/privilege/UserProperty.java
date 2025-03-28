@@ -32,6 +32,7 @@ import org.apache.doris.common.Pair;
 import org.apache.doris.common.UserException;
 import org.apache.doris.common.io.Text;
 import org.apache.doris.common.io.Writable;
+import org.apache.doris.datasource.CatalogIf;
 import org.apache.doris.load.DppConfig;
 import org.apache.doris.persist.gson.GsonUtils;
 import org.apache.doris.resource.Tag;
@@ -88,6 +89,8 @@ public class UserProperty implements Writable {
 
     public static final String DEFAULT_CLOUD_CLUSTER = "default_cloud_cluster";
     public static final String DEFAULT_COMPUTE_GROUP = "default_compute_group";
+
+    public static final String PROP_DEFAULT_INIT_CATALOG = "default_init_catalog";
 
     // for system user
     public static final Set<Pattern> ADVANCED_PROPERTIES = Sets.newHashSet();
@@ -147,6 +150,7 @@ public class UserProperty implements Writable {
         COMMON_PROPERTIES.add(Pattern.compile("^" + PROP_WORKLOAD_GROUP + "$", Pattern.CASE_INSENSITIVE));
         COMMON_PROPERTIES.add(Pattern.compile("^" + DEFAULT_CLOUD_CLUSTER + "$", Pattern.CASE_INSENSITIVE));
         COMMON_PROPERTIES.add(Pattern.compile("^" + DEFAULT_COMPUTE_GROUP + "$", Pattern.CASE_INSENSITIVE));
+        COMMON_PROPERTIES.add(Pattern.compile("^" + PROP_DEFAULT_INIT_CATALOG + "$", Pattern.CASE_INSENSITIVE));
     }
 
     public UserProperty() {
@@ -192,6 +196,9 @@ public class UserProperty implements Writable {
         return commonProperties.getWorkloadGroup();
     }
 
+    public String getInitCatalog() { return commonProperties.getInitCatalog(); }
+
+
     @Deprecated
     public WhiteList getWhiteList() {
         return whiteList;
@@ -221,6 +228,7 @@ public class UserProperty implements Writable {
         int queryTimeout = this.commonProperties.getQueryTimeout();
         int insertTimeout = this.commonProperties.getInsertTimeout();
         String workloadGroup = this.commonProperties.getWorkloadGroup();
+        String initCatalog = this.commonProperties.getInitCatalog();
 
         String newDefaultLoadCluster = defaultLoadCluster;
         String newDefaultCloudCluster = defaultCloudCluster;
@@ -358,6 +366,15 @@ public class UserProperty implements Writable {
                     throw new DdlException("workload group " + value + " not exists");
                 }
                 workloadGroup = value;
+            } else if (keyArr[0].equalsIgnoreCase(PROP_DEFAULT_INIT_CATALOG)) {
+                if (keyArr.length != 1) {
+                    throw new DdlException(PROP_DEFAULT_INIT_CATALOG + " format error");
+                }
+                CatalogIf catalog = Env.getCurrentEnv().getCatalogMgr().getCatalog(value);
+                if (catalog == null) {
+                    throw new DdlException("catalog " + value + " not exists");
+                }
+                initCatalog = value;
             } else {
                 if (isReplay) {
                     // After using SET PROPERTY to modify the user property, if FE rolls back to a version without
@@ -381,6 +398,7 @@ public class UserProperty implements Writable {
         this.commonProperties.setQueryTimeout(queryTimeout);
         this.commonProperties.setInsertTimeout(insertTimeout);
         this.commonProperties.setWorkloadGroup(workloadGroup);
+        this.commonProperties.setInitCatalog(initCatalog);
         if (newDppConfigs.containsKey(newDefaultLoadCluster)) {
             defaultLoadCluster = newDefaultLoadCluster;
         } else {
@@ -545,6 +563,8 @@ public class UserProperty implements Writable {
         result.add(Lists.newArrayList(PROP_RESOURCE_TAGS, Joiner.on(", ").join(commonProperties.getResourceTags())));
 
         result.add(Lists.newArrayList(PROP_WORKLOAD_GROUP, String.valueOf(commonProperties.getWorkloadGroup())));
+
+        result.add(Lists.newArrayList(PROP_DEFAULT_INIT_CATALOG, String.valueOf(commonProperties.getInitCatalog())));
 
         // load cluster
         if (defaultLoadCluster != null) {
