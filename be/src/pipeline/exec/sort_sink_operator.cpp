@@ -58,9 +58,16 @@ Status SortSinkLocalState::open(RuntimeState* state) {
         break;
     }
     case TSortAlgorithm::FULL_SORT: {
-        _shared_state->sorter = vectorized::FullSorter::create_unique(
+        auto full_sorter = vectorized::FullSorter::create_unique(
                 _vsort_exec_exprs, p._limit, p._offset, p._pool, p._is_asc_order, p._nulls_first,
                 p._child->row_desc(), state, _profile);
+        if (p._full_sort_buffered_rows > 0) {
+            full_sorter->set_buffered_block_rows(p._full_sort_buffered_rows);
+        }
+        if (p._full_sort_buffered_bytes > 0) {
+            full_sorter->set_buffered_block_bytes(p._full_sort_buffered_bytes);
+        }
+        _shared_state->sorter = std::move(full_sorter);
         break;
     }
     default: {
@@ -97,7 +104,13 @@ SortSinkOperatorX::SortSinkOperatorX(ObjectPool* pool, int operator_id, const TP
                                                                : std::vector<TExpr> {}),
           _algorithm(tnode.sort_node.__isset.algorithm ? tnode.sort_node.algorithm
                                                        : TSortAlgorithm::FULL_SORT),
-          _reuse_mem(_algorithm != TSortAlgorithm::HEAP_SORT) {
+          _reuse_mem(_algorithm != TSortAlgorithm::HEAP_SORT),
+          _full_sort_buffered_rows(tnode.sort_node.__isset.full_sort_buffered_rows
+                                           ? tnode.sort_node.full_sort_buffered_rows
+                                           : -1),
+          _full_sort_buffered_bytes(tnode.sort_node.__isset.full_sort_buffered_bytes
+                                            ? tnode.sort_node.full_sort_buffered_bytes
+                                            : -1) {
     _is_serial_operator = tnode.__isset.is_serial_operator && tnode.is_serial_operator;
 }
 

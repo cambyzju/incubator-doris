@@ -175,9 +175,21 @@ public:
                                      int batch_size, bool* eos) override;
     void reset() override;
 
+    void set_buffered_block_rows(int64_t buffered_rows) {
+        if (buffered_rows > 0) {
+            buffered_block_rows_ = buffered_rows;
+        }
+    }
+
+    void set_buffered_block_bytes(int64_t buffered_bytes) {
+        if (buffered_bytes > 0) {
+            buffered_block_bytes_ = buffered_bytes;
+        }
+    }
+
 private:
     bool _reach_limit() {
-        return _state->unsorted_block_->rows() > buffered_block_size_ ||
+        return _state->unsorted_block_->rows() > buffered_block_rows_ ||
                _state->unsorted_block_->bytes() > buffered_block_bytes_;
     }
 
@@ -185,13 +197,13 @@ private:
 
     std::unique_ptr<MergeSorterState> _state;
 
-    static constexpr size_t INITIAL_BUFFERED_BLOCK_SIZE = 1024 * 1024;
+    static constexpr size_t INITIAL_BUFFERED_BLOCK_SIZE = 64 << 20;
     static constexpr size_t INITIAL_BUFFERED_BLOCK_BYTES = 64 << 20;
 
     static constexpr size_t SPILL_BUFFERED_BLOCK_SIZE = 4 * 1024 * 1024;
     static constexpr size_t SPILL_BUFFERED_BLOCK_BYTES = 256 << 20;
 
-    size_t buffered_block_size_ = INITIAL_BUFFERED_BLOCK_SIZE;
+    size_t buffered_block_rows_ = INITIAL_BUFFERED_BLOCK_SIZE;
     size_t buffered_block_bytes_ = INITIAL_BUFFERED_BLOCK_BYTES;
 };
 

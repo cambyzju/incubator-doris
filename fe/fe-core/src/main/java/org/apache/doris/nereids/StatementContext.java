@@ -589,7 +589,7 @@ public class StatementContext implements Closeable {
     /**
      * lock all table collect by TableCollector
      */
-    public synchronized void lock() {
+    public synchronized void lock(long timeoutMs) {
         if (!needLockTables
                 || (tables.isEmpty() && mtmvRelatedTables.isEmpty() && insertTargetTables.isEmpty())
                 || !plannerResources.isEmpty()) {
@@ -606,7 +606,7 @@ public class StatementContext implements Closeable {
             if (!tableIf.needReadLockWhenPlan()) {
                 continue;
             }
-            if (!tableIf.tryReadLock(1, TimeUnit.MINUTES)) {
+            if (!tableIf.tryReadLock(timeoutMs, TimeUnit.MILLISECONDS)) {
                 close();
                 throw new RuntimeException("Failed to get read lock on table:" + tableIf.getName());
             }

@@ -347,7 +347,7 @@ public class NereidsPlanner extends Planner {
             LOG.debug("Start collect and lock table");
         }
         keepOrShowPlanProcess(showPlanProcess, () -> cascadesContext.newTableCollector().collect());
-        statementContext.lock();
+        statementContext.lock(1000000L);
         cascadesContext.setCteContext(new CTEContext());
         NereidsTracer.logImportantTime("EndCollectAndLockTables");
         if (LOG.isDebugEnabled()) {

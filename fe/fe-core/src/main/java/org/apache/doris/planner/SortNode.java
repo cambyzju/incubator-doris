@@ -77,6 +77,9 @@ public class SortNode extends PlanNode {
     private DataPartition inputPartition;
     TSortAlgorithm algorithm;
 
+    private long fullSortBufferedRows = -1;
+    private long fullSortBufferedBytes = -1;
+
     private boolean isUnusedExprRemoved = false;
 
     private ArrayList<Boolean> nullabilityChangedFlags = Lists.newArrayList();
@@ -126,6 +129,13 @@ public class SortNode extends PlanNode {
                     algorithm = TSortAlgorithm.TOPN_SORT;
                 }
             }
+        }
+
+        if (connectContext != null && connectContext.getSessionVariable().fullSortBufferedRows > 0) {
+            fullSortBufferedRows = connectContext.getSessionVariable().fullSortBufferedRows;
+        }
+        if (connectContext != null && connectContext.getSessionVariable().fullSortBufferedBytes > 0) {
+            fullSortBufferedBytes = connectContext.getSessionVariable().fullSortBufferedBytes;
         }
     }
 
@@ -345,8 +355,13 @@ public class SortNode extends PlanNode {
         msg.sort_node.setIsAnalyticSort(isAnalyticSort);
         msg.sort_node.setIsColocate(isColocate);
 
-
         msg.sort_node.setAlgorithm(algorithm);
+        if (fullSortBufferedRows > 0) {
+            msg.sort_node.setFullSortBufferedRows(fullSortBufferedRows);
+        }
+        if (fullSortBufferedBytes > 0) {
+            msg.sort_node.setFullSortBufferedBytes(fullSortBufferedBytes);
+        }
     }
 
     @Override

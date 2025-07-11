@@ -449,7 +449,7 @@ public class NereidsSqlCacheManager {
             }
             currentStatementContext.getTables().put(fullTableName.toList(), tableIf);
         }
-        currentStatementContext.lock();
+        currentStatementContext.lock(1000000L);
         return true;
     }
 

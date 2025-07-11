@@ -1002,6 +1002,8 @@ struct TSortNode {
   9: optional bool is_analytic_sort
   10: optional bool is_colocate
   11: optional TSortAlgorithm algorithm
+  13: optional i64 full_sort_buffered_rows
+  14: optional i64 full_sort_buffered_bytes
 }
 
 enum TopNAlgorithm {

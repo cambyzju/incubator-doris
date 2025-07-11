@@ -107,6 +107,9 @@ private:
     const std::vector<TExpr> _partition_exprs;
     const TSortAlgorithm::type _algorithm;
     const bool _reuse_mem;
+
+    const int64_t _full_sort_buffered_rows;
+    const int64_t _full_sort_buffered_bytes;
 };
 
 } // namespace doris::pipeline
