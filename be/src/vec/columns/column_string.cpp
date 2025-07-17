@@ -604,6 +604,11 @@ void ColumnStr<T>::reserve(size_t n) {
 }
 
 template <typename T>
+void ColumnStr<T>:: reserve_chars(size_t bytes) {
+    chars.reserve(bytes);
+}
+
+template <typename T>
 void ColumnStr<T>::resize(size_t n) {
     auto origin_size = size();
     if (origin_size > n) {

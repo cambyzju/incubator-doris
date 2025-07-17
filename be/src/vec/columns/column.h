@@ -523,6 +523,8 @@ public:
     /// It affects performance only (not correctness).
     virtual void reserve(size_t /*n*/) {}
 
+    virtual void reserve_chars(size_t /*bytes*/ ) {}
+
     /// Resize memory for specified amount of elements. If reservation isn't possible, does nothing.
     /// It affects performance only (not correctness).
     virtual void resize(size_t /*n*/) {}

@@ -528,6 +528,10 @@ void ColumnNullable::reserve(size_t n) {
     get_null_map_data(false).reserve(n);
 }
 
+void ColumnNullable::reserve_chars(size_t bytes) {
+    get_nested_column().reserve_chars(bytes);
+}
+
 void ColumnNullable::resize(size_t n) {
     auto& null_map_data = get_null_map_data();
     get_nested_column().resize(n);

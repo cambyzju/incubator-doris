@@ -545,6 +545,8 @@ public:
 
     void reserve(size_t n) override;
 
+    void reserve_chars(size_t bytes) override;
+
     void resize(size_t n) override;
 
     bool is_column_string() const override { return true; }
