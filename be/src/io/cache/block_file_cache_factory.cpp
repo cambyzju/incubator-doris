@@ -31,7 +31,6 @@
 #endif
 
 #include <algorithm>
-#include <execution>
 #include <ostream>
 #include <utility>
 
@@ -205,17 +204,9 @@ FileCacheFactory::get_query_context_holders(const TUniqueId& query_id) {
 }
 
 std::string FileCacheFactory::clear_file_caches(bool sync) {
-    std::vector<std::string> results(_caches.size());
-
-    std::for_each(std::execution::par, _caches.begin(), _caches.end(), [&](const auto& cache) {
-        size_t index = &cache - &_caches[0];
-        results[index] =
-                sync ? cache->clear_file_cache_directly() : cache->clear_file_cache_async();
-    });
-
     std::stringstream ss;
-    for (const auto& result : results) {
-        ss << result << "\n";
+    for (const auto& cache : _caches) {
+        ss << (sync ? cache->clear_file_cache_directly() : cache->clear_file_cache_async()) << "\n";
     }
     return ss.str();
 }
