@@ -23,20 +23,14 @@ import org.apache.doris.catalog.Type;
 import org.apache.doris.common.util.Util;
 import org.apache.doris.datasource.jdbc.util.JdbcFieldSchema;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import java.sql.Connection;
-import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.function.Consumer;
 
 public class JdbcHive2Client extends JdbcClient {
     protected JdbcHive2Client(JdbcClientConfig jdbcClientConfig) {
@@ -54,98 +48,8 @@ public class JdbcHive2Client extends JdbcClient {
         }
     }
 
-    @Override
-    public List<String> getDatabaseNameList() {
-        Connection conn = null;
-        ResultSet rs = null;
-        List<String> remoteDatabaseNames = Lists.newArrayList();
-        try {
-            conn = getConnection();
-            if (isOnlySpecifiedDatabase && includeDatabaseMap.isEmpty() && excludeDatabaseMap.isEmpty()) {
-                String currentDatabase = conn.getCatalog();
-                remoteDatabaseNames.add(currentDatabase);
-            } else {
-                rs = conn.getMetaData().getCatalogs();
-                while (rs.next()) {
-                    remoteDatabaseNames.add(rs.getString("TABLE_CAT"));
-                }
-            }
-        } catch (SQLException e) {
-            throw new JdbcClientException("failed to get database name list from jdbc", e);
-        } finally {
-            close(rs, conn);
-        }
-        return filterDatabaseNames(remoteDatabaseNames);
-    }
-
-    @Override
-    protected void processTable(String remoteDbName, String remoteTableName, String[] tableTypes,
-            Consumer<ResultSet> resultSetConsumer) {
-        Connection conn = null;
-        ResultSet rs = null;
-        try {
-            conn = super.getConnection();
-            DatabaseMetaData databaseMetaData = conn.getMetaData();
-            rs = databaseMetaData.getTables(remoteDbName, null, remoteTableName, tableTypes);
-            resultSetConsumer.accept(rs);
-        } catch (SQLException e) {
-            throw new JdbcClientException("Failed to process table", e);
-        } finally {
-            close(rs, conn);
-        }
-    }
-
-    @Override
-    protected String[] getTableTypes() {
-        return new String[] {"TABLE", "VIEW", "SYSTEM VIEW"};
-    }
-
-    @Override
-    protected ResultSet getRemoteColumns(DatabaseMetaData databaseMetaData, String catalogName, String remoteDbName,
-            String remoteTableName) throws SQLException {
-        return databaseMetaData.getColumns(remoteDbName, null, remoteTableName, null);
-    }
-
-    /**
-     * get all columns of one table
-     */
-    @Override
-    public List<JdbcFieldSchema> getJdbcColumnsInfo(String remoteDbName, String remoteTableName) {
-        Connection conn = null;
-        ResultSet rs = null;
-        List<JdbcFieldSchema> tableSchema = Lists.newArrayList();
-        try {
-            conn = getConnection();
-            DatabaseMetaData databaseMetaData = conn.getMetaData();
-            String catalogName = getCatalogName(conn);
-            rs = getRemoteColumns(databaseMetaData, catalogName, remoteDbName, remoteTableName);
-
-            Map<String, String> mapFieldtoType = Maps.newHashMap();
-
-            while (rs.next()) {
-                JdbcFieldSchema field = new JdbcFieldSchema(rs, mapFieldtoType);
-                tableSchema.add(field);
-            }
-        } catch (SQLException e) {
-            throw new JdbcClientException("failed to get jdbc columns info for remote table `%s.%s`: %s",
-                    remoteDbName, remoteTableName, Util.getRootCauseMessage(e));
-        } finally {
-            close(rs, conn);
-        }
-        return tableSchema;
-    }
-
     protected String getCatalogName(Connection conn) throws SQLException {
-        return null;
-    }
-
-    protected Set<String> getFilterInternalDatabases() {
-        return ImmutableSet.<String>builder()
-                .add("information_schema")
-                .add("performance_schema")
-                .add("mysql")
-                .add("sys")
-                .build();
+        return "";
     }
 
     @Override
