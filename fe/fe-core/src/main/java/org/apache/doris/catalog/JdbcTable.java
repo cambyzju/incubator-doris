@@ -123,6 +123,7 @@ public class JdbcTable extends Table {
         tempMap.put("oceanbase_oracle", TOdbcTableType.OCEANBASE_ORACLE);
         tempMap.put("db2", TOdbcTableType.DB2);
         tempMap.put("gbase", TOdbcTableType.GBASE);
+        tempMap.put("hive2", TOdbcTableType.HIVE2);
         TABLE_TYPE_MAP = Collections.unmodifiableMap(tempMap);
     }
 
