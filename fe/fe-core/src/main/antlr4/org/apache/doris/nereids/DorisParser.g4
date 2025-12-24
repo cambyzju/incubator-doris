@@ -1357,7 +1357,7 @@ identifierSeq
     ;
 
 optScanParams
-    : ATSIGN funcName=identifier LEFT_PAREN (mapParams=propertyItemList | listParams=identifierSeq)? RIGHT_PAREN
+    : ATSIGN funcName=identifier (LEFT_PAREN (mapParams=propertyItemList | listParams=identifierSeq)? RIGHT_PAREN)?
     ;
 
 relationPrimary
