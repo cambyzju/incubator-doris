@@ -79,6 +79,7 @@ public abstract class BaseJdbcExecutor implements JdbcExecutor {
     protected int batchSizeNum = 0;
     protected int curBlockRows = 0;
     protected String jdbcDriverVersion;
+    private Boolean alwaysAutoCommit = false;
     private static final Map<URL, ClassLoader> classLoaderMap = Maps.newConcurrentMap();
 
     // col name(lowercase) -> index in resultSetMetaData
@@ -95,6 +96,11 @@ public abstract class BaseJdbcExecutor implements JdbcExecutor {
     private boolean isTvf = false;
 
     public BaseJdbcExecutor(byte[] thriftParams) throws Exception {
+        this(thriftParams, false);
+    }
+
+    public BaseJdbcExecutor(byte[] thriftParams, Boolean alwaysAutoCommit) throws Exception {
+        this.alwaysAutoCommit = alwaysAutoCommit;
         setJdbcDriverSystemProperties();
         TJdbcExecutorCtorParams request = new TJdbcExecutorCtorParams();
         TDeserializer deserializer = new TDeserializer(PROTOCOL_FACTORY);
@@ -504,7 +510,7 @@ public abstract class BaseJdbcExecutor implements JdbcExecutor {
 
     protected void initializeStatement(Connection conn, JdbcDataSourceConfig config, String sql) throws SQLException {
         if (config.getOp() == TJdbcOperation.READ) {
-            conn.setAutoCommit(false);
+            conn.setAutoCommit(alwaysAutoCommit);
             Preconditions.checkArgument(sql != null, "SQL statement cannot be null for READ operation.");
             stmt = conn.prepareStatement(sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY);
             stmt.setFetchSize(config.getBatchSize()); // set fetch size to batch size

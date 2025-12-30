@@ -17,12 +17,14 @@
 
 package org.apache.doris.datasource.jdbc.client;
 
+import org.apache.doris.catalog.ArrayType;
 import org.apache.doris.catalog.ScalarType;
 import org.apache.doris.catalog.Type;
 import org.apache.doris.datasource.jdbc.util.JdbcFieldSchema;
 
 import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Optional;
 
 public class JdbcHive2Client extends JdbcClient {
     protected JdbcHive2Client(JdbcClientConfig jdbcClientConfig) {
@@ -46,7 +48,18 @@ public class JdbcHive2Client extends JdbcClient {
 
     @Override
     protected Type jdbcTypeToDoris(JdbcFieldSchema fieldSchema) {
-        String hiveType = fieldSchema.getDataTypeName().orElse("unknown");
+        String hiveType = fieldSchema.getDataTypeName().orElse("unknown").toUpperCase();
+
+        // For ARRAY type
+        if (hiveType.startsWith("ARRAY")) {
+            String innerType = hiveType.substring(6, hiveType.length() - 1).trim();
+            JdbcFieldSchema innerFieldSchema = new JdbcFieldSchema(fieldSchema);
+            innerFieldSchema.setDataTypeName(Optional.of(innerType));
+            Type arrayInnerType = jdbcTypeToDoris(innerFieldSchema);
+            return ArrayType.create(arrayInnerType, true);
+        }
+
+        // for Primary Type
         switch (hiveType) {
             case "BOOLEAN":
                 return Type.BOOLEAN;
@@ -61,14 +74,8 @@ public class JdbcHive2Client extends JdbcClient {
             case "DATE":
                 return ScalarType.createDateV2Type();
             case "TIMESTAMP":
-            case "DATETIME": {
-                // hive can support microsecond
-                int scale = fieldSchema.getDecimalDigits().orElse(0);
-                if (scale > 6) {
-                    scale = 6;
-                }
-                return ScalarType.createDatetimeV2Type(scale);
-            }
+                // keep it same as Hive Table from Hive Catalog
+                return ScalarType.createDatetimeV2Type(6);
             case "FLOAT":
                 return Type.FLOAT;
             case "DOUBLE":
@@ -86,7 +93,24 @@ public class JdbcHive2Client extends JdbcClient {
             case "BINARY":
                 return ScalarType.createStringType();
             default:
-                return Type.UNSUPPORTED;
+                break;
         }
+
+        // for inner type of ARRAY, it maybe: CHAR(10), VARCHAR(20), DECIMAL(10, 2)
+        if (hiveType.startsWith("CHAR(")) {
+            int columnSize = Integer.parseInt(hiveType.substring(5, hiveType.length() - 1));
+            return ScalarType.createCharType(columnSize);
+        } else if (hiveType.startsWith("VARCHAR(")) {
+            int columnSize = Integer.parseInt(hiveType.substring(8, hiveType.length() - 1));
+            return ScalarType.createVarcharType(columnSize);
+        } else if (hiveType.startsWith("DECIMAL(")) {
+            String[] split = hiveType.split("\\(");
+            String[] precisionAndScale = split[1].split(",");
+            int precision = Integer.parseInt(precisionAndScale[0]);
+            int scale = Integer.parseInt(precisionAndScale[1].substring(0, precisionAndScale[1].length() - 1));
+            return createDecimalOrStringType(precision, scale);
+        }
+
+        return Type.UNSUPPORTED;
     }
 }
